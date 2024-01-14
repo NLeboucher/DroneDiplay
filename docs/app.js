@@ -120,26 +120,25 @@ const cubeFolder = gui.addFolder('Drones')
 // Load the Drone Model
 const loader = new GLTFLoader();
 let droneModel; // This will hold the original loaded model
-const axesHelper = new THREE.AxesHelper( 5 );
+let axesHelper = new THREE.AxesHelper( 5 );
 scene.add( axesHelper );
 let drones = [];
-
-loader.load('assets/drone.glb', (gltf) => {
-    droneModel = gltf.scene;
-    // add the model to the scene
-    // scene.add(droneModel);
-
-    // Once the model is loaded, create drones
-    if(!useTrueDrones){
-        createDrones(document.getElementById("NDrones").value=== "NDrones" ? 1 : document.getElementById("NDrones").value);
-    }
-    else{
-        createDrones();
-    }
-    
-    
-
-});
+function loadDroneModel() {
+    loader.load('assets/drone.glb', (gltf) => {
+        droneModel = gltf.scene;
+        // add the model to the scene
+        // scene.add(droneModel);
+        // Once the model is loaded, create drones
+        if(!useTrueDrones){
+            createScene(document.getElementById("NDrones").value=== "NDrones" ? 1 : document.getElementById("NDrones").value);
+        }
+        else{
+            createScene();
+        }
+        console.log("loaded model")
+    });
+}
+loadDroneModel()
 const controls = new DragControls( Drone.droneMeshes, camera, renderer.domElement );   
 // controls.addEventListener( 'dragstart', dragStartCallback );
 // controls.addEventListener( 'dragend', dragendCallback );
@@ -170,9 +169,32 @@ async function asyncCall(call="") {
   }
 
 
-
-function createDrones(N=1) {
+  function clearScene() {
+    while (scene.children.length > 0) { 
+        let child = scene.children[0];
+    
+        if (child.geometry) {
+            child.geometry.dispose(); 
+        }
+    
+        if (child.material) {
+            // In case of multi-materials, dispose all of them
+            if (Array.isArray(child.material)) {
+                for (const material of child.material) {
+                    material.dispose();
+                }
+            } else {
+                child.material.dispose();
+            }
+        }
+    
+        scene.remove(child); 
+    }
+};
+function createScene(N=1) {
     drones=[]; // Reset the drones array
+    axesHelper = new THREE.AxesHelper( 5 );
+    scene.add( axesHelper );
     // const N = 5; // Number of drones
     for (let i = 0; i < N; i++) {
         const random_position = new THREE.Vector3(
@@ -224,7 +246,7 @@ async function updateRealPositions() {
     const ans = await asyncCall("/getestimatedpositions/")
     drones.forEach(item => {
         // console.log(item.toString())
-        ans[item.id].position = ans[0],ans[1],ans[2];
+        item.position = ans[0],ans[1],ans[2];
         // console.log(item.worldPosition);
         // item.model.position.set(item.worldPosition.x, item.worldPosition.z,item.worldPosition.y);
     });
@@ -327,12 +349,13 @@ document.addEventListener('DOMContentLoaded', (event) => {
 });
 
 document.getElementById("NDrones").addEventListener("change", function () {
-    if(!useTrueDrones){
-    createDrones(document.getElementById("NDrones").value=== "NDrones" ? 1 : document.getElementById("NDrones").value);
-}
-else{
-    createDrones();
-}});
+    clearScene();
+
+loadDroneModel();
+
+
+
+});
 
 function showIPValue() {
     IP = document.getElementById("ip").value;
